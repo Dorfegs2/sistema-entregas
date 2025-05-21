@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Pedidos de Entrega</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <style>
+    #map { height: 300px; margin-top: 10px; }
+    body { font-family: Arial, sans-serif; max-width: 600px; margin: 20px auto; }
+    input, button { margin: 5px 0; padding: 8px; width: 100%; box-sizing: border-box; }
+    #mensagem { margin-top: 10px; font-weight: bold; }
+  </style>
+</head>
+<body>
+
+  <h1>Pedido de Entrega</h1>
+  <form id="formPedido">
+    <input type="text" id="nome" placeholder="Nome do Cliente" required />
+    <input type="text" id="numPedido" placeholder="Número do Pedido" required />
+    <input type="text" id="enderecoA" placeholder="Endereço Coleta (Ponto A)" required />
+    <input type="text" id="enderecoB" placeholder="Endereço Entrega (Ponto B)" required />
+    <button type="button" id="btnCalcular">Calcular Rota</button>
+    <button id="btnWhatsapp" disabled>Enviar pelo WhatsApp</button>
+
+  </form>
+
+  <div id="mensagem"></div>
+  <div id="map"></div>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
