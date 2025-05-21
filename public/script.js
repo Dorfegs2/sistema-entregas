@@ -1,4 +1,4 @@
-const map = L.map('map').setView([-27.6304, -48.5161], 13);
+const map = L.map('map').setView([-27.6184, -48.4892], 13);
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '&copy; OpenStreetMap contributors'
@@ -93,6 +93,10 @@ async function calcularRota() {
     if (distanciaKm > 4) {
       valorEntrega += (distanciaKm - 4) * 1.5;
     }
+    const temRetorno = document.getElementById('temRetorno').checked;
+if (temRetorno) {
+  valorEntrega += 3.0;
+}
 
     msgDiv.innerHTML = `
       Distância: ${distanciaKm.toFixed(2)} km<br>
@@ -101,6 +105,8 @@ async function calcularRota() {
     `;
 
     rotaInfoGlobal.valorEntrega = valorEntrega;
+    rotaInfoGlobal.temRetorno = temRetorno;
+
 
     document.getElementById('btnWhatsapp').disabled = false;
 
