@@ -136,7 +136,7 @@
   const observacao = document.getElementById('observacao').value.trim();
   const temRetorno = document.getElementById('temRetorno').checked;
 
-      const resposta = await fetch('http://localhost:3000/api/pedidos', {
+      const resposta = await fetch('https://sistemas-entregas-prd.onrender.com/api/solicitacoes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
