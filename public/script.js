@@ -86,7 +86,6 @@ async function calcularRota() {
       duracao: rotaInfo.duracao
     };
 
-    // Cálculo do valor da entrega conforme regra:
     const distanciaKm = rotaInfo.distancia / 1000;
     const duracaoMin = rotaInfo.duracao / 60;
     let valorEntrega = 8.0;
@@ -94,9 +93,9 @@ async function calcularRota() {
       valorEntrega += (distanciaKm - 4) * 1.5;
     }
     const temRetorno = document.getElementById('temRetorno').checked;
-if (temRetorno) {
-  valorEntrega += 3.0;
-}
+    if (temRetorno) {
+      valorEntrega += 3.0;
+    }
 
     msgDiv.innerHTML = `
       Distância: ${distanciaKm.toFixed(2)} km<br>
@@ -107,7 +106,6 @@ if (temRetorno) {
     rotaInfoGlobal.valorEntrega = valorEntrega;
     rotaInfoGlobal.temRetorno = temRetorno;
 
-
     document.getElementById('btnWhatsapp').disabled = false;
 
   } catch (error) {
@@ -117,18 +115,23 @@ if (temRetorno) {
   }
 }
 
+let abaWhatsApp = null;
+
 function abrirWhatsApp() {
   if (!rotaInfoGlobal) {
     alert('Por favor, calcule a rota antes de enviar o pedido.');
     return;
   }
 
-  const nome = document.getElementById('nome').value.trim();
+ const nomedocliente = document.getElementById('nomedocliente').value.trim();
   const numPedido = document.getElementById('numPedido').value.trim();
   const enderecoA = document.getElementById('enderecoA').value.trim();
   const enderecoB = document.getElementById('enderecoB').value.trim();
+  const observacao = document.getElementById('observacao').value.trim();
+  const temRetorno = document.getElementById('temRetorno').checked;
 
-  if (!nome || !numPedido || !enderecoA || !enderecoB) {
+
+  if (!numPedido || !enderecoA || !enderecoB) {
     alert('Preencha todos os campos antes de enviar.');
     return;
   }
@@ -137,22 +140,33 @@ function abrirWhatsApp() {
   const duracaoMin = (rotaInfoGlobal.duracao / 60).toFixed(0);
   const valorEntrega = rotaInfoGlobal.valorEntrega.toFixed(2);
 
-  const msg = 
-`*Pedido de Entrega*
+  let msg = `*Pedido de Entrega*
 
-Nome: ${nome}
+Nome: ${nomedocliente}
 Pedido Nº: ${numPedido}
 Coleta: ${enderecoA}
 Entrega: ${enderecoB}
 Distância: ${distanciaKm} km
 Duração: ${duracaoMin} minutos
 Valor da entrega: R$ ${valorEntrega}`;
+if (observacao) {
+  msg += `\nObservações: ${observacao}`;
+}
 
-  const numeroWhatsApp = '48988131927';
+
+  const numeroWhatsApp = '5548988131927';
   const url = `https://wa.me/${numeroWhatsApp}?text=${encodeURIComponent(msg)}`;
 
-  window.open(url, '_blank');
+  // Reaproveita a aba se ainda estiver aberta
+  if (abaWhatsApp && !abaWhatsApp.closed) {
+    abaWhatsApp.location.href = url; // atualiza a aba
+    abaWhatsApp.focus();
+  } else {
+    abaWhatsApp = window.open(url, 'abaWhatsapp');
+  }
 }
+
+
 
 document.getElementById('btnCalcular').addEventListener('click', calcularRota);
 document.getElementById('btnWhatsapp').addEventListener('click', abrirWhatsApp);
