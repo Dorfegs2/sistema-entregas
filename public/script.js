@@ -172,57 +172,55 @@ function abrirWhatsApp() {
     return;
   }
 
-  // Variáveis da rota
-  const distanciaKm = (rotaInfoGlobal.distancia / 1000).toFixed(2);
-  const duracaoMin = Math.round(rotaInfoGlobal.duracao / 60);
-  const valorEntrega = rotaInfoGlobal.valorEntrega.toFixed(2);
-  const temRetorno = rotaInfoGlobal.temRetorno;
-  const retornoTexto = temRetorno ? 'Retorno: SIM' : 'Retorno: NÃO';
-
-  // Função para reinserir número no endereço formatado
+  // Reinsere número no endereço formatado
   function reinserirNumeroEndereco(original, formatado) {
     const match = original.match(/(\d{1,5})/);
     if (!match) return formatado;
     const numero = match[1];
 
     const partes = formatado.split(',');
-    if (partes.length > 1 && !partes[0].includes(numero)) {
-      partes[0] = partes[0] + ', ' + numero;
+    if (partes.length > 1) {
+      if (!partes[0].includes(numero)) {
+        partes[0] = partes[0] + ', ' + numero;
+      }
       return partes.join(', ');
     }
-    return formatado.includes(numero) ? formatado : formatado + ', ' + numero;
+    return formatado + ', ' + numero;
   }
 
-  // Função para resumir o endereço pegando 4 partes
+  // Resumir o endereço em até 5 partes
   function resumirEndereco(enderecoCompleto) {
     const partes = enderecoCompleto.split(',');
     return partes.slice(0, 5).map(p => p.trim()).join(', ');
   }
 
-  // Reinsere número no endereço formatado
   const enderecoAComNumero = reinserirNumeroEndereco(enderecoAOriginal, rotaInfoGlobal.enderecoFormatadoA);
   const enderecoBComNumero = reinserirNumeroEndereco(enderecoBOriginal, rotaInfoGlobal.enderecoFormatadoB);
 
-  // Resumir endereço para 4 partes
   const enderecoAResumido = resumirEndereco(enderecoAComNumero);
   const enderecoBResumido = resumirEndereco(enderecoBComNumero);
 
-  // Monta a mensagem WhatsApp
-  const msg = `*Pedido de Entrega*\n
+  const distanciaKm = rotaInfoGlobal.distancia / 1000;
+  const duracaoMin = rotaInfoGlobal.duracao / 60;
+  const valorEntrega = rotaInfoGlobal.valorEntrega.toFixed(2);
+  const retornoTexto = rotaInfoGlobal.temRetorno ? 'Retorno: SIM' : 'Retorno: NÃO';
+
+  const msg = `*Pedido de Entrega*
+
 Nome: ${nome}
 Pedido Nº: ${numPedido}
 Coleta: ${enderecoAResumido}
 Entrega: ${enderecoBResumido}
-Distância: ${distanciaKm} km
-Duração: ${duracaoMin} minutos
+Distância: ${distanciaKm.toFixed(2)} km
+Duração: ${duracaoMin.toFixed(0)} minutos
 ${retornoTexto}
 Valor da entrega: R$ ${valorEntrega}`;
 
   const numeroWhatsApp = '48988131927';
   const url = `https://wa.me/${numeroWhatsApp}?text=${encodeURIComponent(msg)}`;
-
   window.open(url, '_blank');
 }
+
 
 
 document.getElementById('btnCalcular').addEventListener('click', calcularRota);
