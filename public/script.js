@@ -9,7 +9,7 @@ let rotaInfoGlobal = null;
 
 function resumirEndereco(enderecoCompleto) {
   const partes = enderecoCompleto.split(',');
-  return partes.slice(0, 4).join(',').trim(); // Rua, número, bairro
+  return partes.slice(0, 5).join(',').trim(); // Rua, número, bairro
 }
 
 
@@ -196,7 +196,7 @@ function abrirWhatsApp() {
   // Função para resumir o endereço pegando 4 partes
   function resumirEndereco(enderecoCompleto) {
     const partes = enderecoCompleto.split(',');
-    return partes.slice(0, 4).map(p => p.trim()).join(', ');
+    return partes.slice(0, 5).map(p => p.trim()).join(', ');
   }
 
   // Reinsere número no endereço formatado
