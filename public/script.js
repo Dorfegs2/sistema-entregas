@@ -104,12 +104,12 @@ async function calcularRota() {
     const distanciaKm = rotaInfo.distancia / 1000;
     const duracaoMin = rotaInfo.duracao / 60;
 
-    let valorEntrega = 8.0;
-    if (distanciaKm > 4) {
-      valorEntrega += (distanciaKm - 4) * 1.5;
+    let valorEntrega = 15.0;
+    if (distanciaKm > 5) {
+      valorEntrega += (distanciaKm - 5) * 1.8;
     }
-    if (document.getElementById('temRetorno').checked) {
-      valorEntrega += 3.0;
+    if (temRetorno) {
+    valor += distanciaKm * 0.8;
     }
 
     msgDiv.innerHTML = `
