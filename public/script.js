@@ -101,16 +101,17 @@ async function calcularRota() {
 
     const rotaInfo = await desenharRotaMultiplos(pontos);
 
-    const distanciaKm = rotaInfo.distancia / 1000;
-    const duracaoMin = rotaInfo.duracao / 60;
+const distanciaKm = rotaInfo.distancia / 1000;
+const duracaoMin = rotaInfo.duracao / 60;
 
-    let valorEntrega = 15.0;
-    if (distanciaKm > 5) {
-      valorEntrega += (distanciaKm - 5) * 1.8;
-    }
-    if (temRetorno) {
-    valor += distanciaKm * 0.8;
-    }
+let valorEntrega = 15.0;
+if (distanciaKm > 5) {
+  valorEntrega += (distanciaKm - 5) * 1.8;
+}
+if (temRetorno) {
+  valorEntrega += distanciaKm * 0.8;
+}
+
 
     msgDiv.innerHTML = `
       Total de pontos: ${enderecos.length}<br>
