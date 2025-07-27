@@ -143,6 +143,7 @@
   const enderecoB = document.getElementById('enderecoB').value.trim();
   const observacao = document.getElementById('observacao').value.trim();
   const temRetorno = document.getElementById('temRetorno').checked;
+const valorEntrega = calcularValorEntrega(distanciaKm, temRetorno);
 
       const resposta = await fetch('https://sistemas-entregas-prd.onrender.com/api/solicitacoes', {
         method: 'POST',
