@@ -99,6 +99,12 @@
         <span class="input-group-text"><i class="bi bi-geo"></i></span>
         <input type="text" id="enderecoB" class="form-control" placeholder="Endereço Entrega (Ponto B)" required />
       </div>
+      <div id="enderecosExtras"></div>
+
+<button type="button" class="btn btn-outline-info w-100 mt-2" id="btnAddEntrega">
+  <i class="bi bi-plus-circle"></i> Adicionar Entrega
+</button>
+
       <div class="input-group">
         <span class="input-group-text"><i class="bi bi-hash"></i></span>
         <input type="text" id="observacao" class="form-control" placeholder="Observação" required />
@@ -147,12 +153,6 @@
           numPedido,
           enderecoA,
           enderecoB,
-          <div id="enderecosExtras"></div>
-
-<button type="button" class="btn btn-outline-info w-100 mt-2" id="btnAddEntrega">
-  <i class="bi bi-plus-circle"></i> Adicionar Entrega
-</button>
-
           temRetorno
         })
       });
