@@ -104,6 +104,8 @@ async function calcularRota() {
 const distanciaKm = rotaInfo.distancia / 1000;
 const duracaoMin = rotaInfo.duracao / 60;
 
+    const temRetorno = document.getElementById('temRetorno').checked;
+
 let valorEntrega = 15.0;
 if (distanciaKm > 5) {
   valorEntrega += (distanciaKm - 5) * 1.8;
