@@ -155,6 +155,20 @@
           enderecoB,
           temRetorno
         })
+        document.getElementById('btnAddEntrega').addEventListener('click', () => {
+  const container = document.getElementById('enderecosExtras');
+  const totalExtras = container.querySelectorAll('.endereco-extra').length;
+  const letra = String.fromCharCode(66 + totalExtras); // 66 = 'B'
+
+  const grupo = document.createElement('div');
+  grupo.className = 'input-group mt-2';
+  grupo.innerHTML = `
+    <span class="input-group-text"><i class="bi bi-geo-alt-fill"></i></span>
+    <input type="text" class="form-control endereco-extra" placeholder="Endereço Entrega Extra (Ponto ${letra})" required />
+  `;
+  container.appendChild(grupo);
+});
+
       });
 
       if (resposta.ok) {
