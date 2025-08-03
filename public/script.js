@@ -106,9 +106,9 @@ const duracaoMin = rotaInfo.duracao / 60;
 
     const temRetorno = document.getElementById('temRetorno').checked;
 
-let valorEntrega = 15.0;
-if (distanciaKm > 5) {
-  valorEntrega += (distanciaKm - 5) * 1.8;
+let valorEntrega = 8.0;
+if (distanciaKm > 3) {
+  valorEntrega += (distanciaKm - 3) * 1.5;
 }
 if (temRetorno) {
   valorEntrega += distanciaKm * 0.8;
