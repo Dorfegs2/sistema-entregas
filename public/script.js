@@ -114,7 +114,7 @@ if (temRetorno) {
   valorEntrega += distanciaKm * 0.8;
 }
     const pontosExtras = extras.filter(e => e !== '').length;
-valorEntrega += pontosExtras * 6;
+valorEntrega += pontosExtras * 5;
 
 
     msgDiv.innerHTML = `
