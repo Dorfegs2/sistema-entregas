@@ -88,58 +88,84 @@ async function calcularRota() {
   const enderecoA = document.getElementById('enderecoA').value.trim();
   const enderecoB = document.getElementById('enderecoB').value.trim();
   const extras = Array.from(document.querySelectorAll('.endereco-extra')).map(input => input.value.trim());
+  const temRetorno = document.getElementById('temRetorno').checked;
 
-  const enderecos = [enderecoA, enderecoB, ...extras];
+  const enderecos = [enderecoB, ...extras]; // Destinos (sem incluir A)
   const pontos = [];
+  let pontoA;
 
   try {
-    for (const endereco of enderecos) {
-      const ponto = await buscarCoordenadas(endereco);
-      pontos.push(ponto);
-      L.marker([ponto.lat, ponto.lon]).addTo(map).bindPopup(endereco).openPopup();
+    // Busca coordenadas do ponto A
+    pontoA = await buscarCoordenadas(enderecoA);
+    markerA = L.marker([pontoA.lat, pontoA.lon]).addTo(map).bindPopup('Origem (A)').openPopup();
+
+    // Adiciona ponto A ao mapa
+    let distanciaTotal = 0;
+    let duracaoTotal = 0;
+    let valorEntrega = 0;
+
+    for (let i = 0; i < enderecos.length; i++) {
+      const destino = await buscarCoordenadas(enderecos[i]);
+      pontos.push(destino);
+
+      L.marker([destino.lat, destino.lon]).addTo(map).bindPopup(`Entrega ${String.fromCharCode(66 + i)}: ${enderecos[i]}`);
+
+      // Rota do A → destino
+      const rota = await desenharRotaMultiplos([pontoA, destino]);
+
+      const distanciaKm = rota.distancia / 1000;
+      const duracaoMin = rota.duracao / 60;
+
+      distanciaTotal += rota.distancia;
+      duracaoTotal += rota.duracao;
+
+      // Calcular valor individual da entrega
+      let valor = 8.0;
+      if (distanciaKm > 3) {
+        valor += (distanciaKm - 3) * 1.8;
+      }
+
+      if (temRetorno) {
+        valor += distanciaKm * 0.8;
+      }
+
+      // R$6 por parada extra (exceto primeira entrega)
+      if (i > 0) {
+        valor += 6;
+      }
+
+      valorEntrega += valor;
     }
 
-    const rotaInfo = await desenharRotaMultiplos(pontos);
-
-const distanciaKm = rotaInfo.distancia / 1000;
-const duracaoMin = rotaInfo.duracao / 60;
-
-    const temRetorno = document.getElementById('temRetorno').checked;
-
-let valorEntrega = 8.0;
-if (distanciaKm > 3) {
-  valorEntrega += (distanciaKm - 3) * 1.8;
-}
-if (temRetorno) {
-  valorEntrega += distanciaKm * 0.8;
-}
-    const pontosExtras = extras.filter(e => e !== '').length;
-valorEntrega += pontosExtras * 5;
-
+    // Exibe resultados
+    const totalKm = distanciaTotal / 1000;
+    const totalMin = duracaoTotal / 60;
 
     msgDiv.innerHTML = `
-      Total de pontos: ${enderecos.length}<br>
-      Distância: ${distanciaKm.toFixed(2)} km<br>
-      Duração: ${duracaoMin.toFixed(0)} minutos<br>
-      <strong>Valor da entrega: R$ ${valorEntrega.toFixed(2)}</strong>
+      Total de entregas: ${enderecos.length}<br>
+      Distância total: ${totalKm.toFixed(2)} km<br>
+      Tempo estimado: ${totalMin.toFixed(0)} minutos<br>
+      <strong>Valor total da entrega: R$ ${valorEntrega.toFixed(2)}</strong>
     `;
 
     rotaInfoGlobal = {
-      pontos,
-      distancia: rotaInfo.distancia,
-      duracao: rotaInfo.duracao,
+      pontos: [pontoA, ...pontos],
+      distancia: distanciaTotal,
+      duracao: duracaoTotal,
       valorEntrega,
-      temRetorno: document.getElementById('temRetorno').checked,
-      enderecosDigitados: enderecos
+      temRetorno,
+      enderecosDigitados: [enderecoA, ...enderecos]
     };
 
     document.getElementById('btnWhatsapp').disabled = false;
+
   } catch (err) {
     msgDiv.textContent = err.message;
     msgDiv.style.color = 'red';
     document.getElementById('btnWhatsapp').disabled = true;
   }
 }
+
 
 function abrirWhatsApp() {
   if (!rotaInfoGlobal) {
