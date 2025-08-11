@@ -123,10 +123,6 @@ async function calcularRota() {
       valorEntrega += distanciaKm * 0.8;
     }
 
-    // Paradas extras (desconsidera origem e primeira entrega)
-    const pontosExtras = enderecos.length - 2;
-    valorEntrega += pontosExtras * 6;
-
     // 🖼️ Exibir resumo
     msgDiv.innerHTML = `
       Total de pontos: ${enderecos.length}<br>
