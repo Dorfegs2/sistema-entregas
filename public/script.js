@@ -167,6 +167,7 @@ async function calcularRota() {
 }
 
 
+
 function abrirWhatsApp() {
   if (!rotaInfoGlobal) {
     alert('Calcule a rota antes de enviar.');
