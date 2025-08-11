@@ -79,65 +79,50 @@ function resumirEndereco(enderecoCompleto) {
   return partes.slice(0, 4).map(p => p.trim()).join(', ');
 }
 
-async function calcularRota() {
-  const msgDiv = document.getElementById('mensagem');
-  msgDiv.textContent = 'Calculando rota...';
-  msgDiv.style.color = 'black';
-  limparMapa();
+async function calcularRotaOtimizada() {
+  const enderecos = [
+    document.getElementById('enderecoA').value.trim(),
+    document.getElementById('enderecoB').value.trim(),
+    ...Array.from(document.querySelectorAll('.endereco-extra')).map(input => input.value.trim())
+  ].filter(e => e !== '');
 
-  const enderecoA = document.getElementById('enderecoA').value.trim();
-  const enderecoB = document.getElementById('enderecoB').value.trim();
-  const extras = Array.from(document.querySelectorAll('.endereco-extra')).map(input => input.value.trim());
-  const temRetorno = document.getElementById('temRetorno').checked;
+  const coords = await Promise.all(enderecos.map(e => buscarCoordenadas(e)));
 
-  if (!enderecoA || !enderecoB) {
-    msgDiv.textContent = 'Preencha pelo menos origem e destino.';
-    msgDiv.style.color = 'red';
-    return;
-  }
+  const origem = coords[0];
+  const paradas = coords.slice(1);
 
-  const enderecos = [enderecoA, enderecoB, ...extras.filter(e => e !== '')];
-  let valorTotal = 0;
-  let distanciaTotalKm = 0;
+  // Gerar todas as ordens possíveis das paradas
+  const ordens = permutacoes(paradas);
+  
+  let melhorOrdem = null;
+  let menorDistancia = Infinity;
 
-  try {
-    // Buscar coordenadas do ponto A
-    const pontoA = await buscarCoordenadas(enderecoA);
-    L.marker([pontoA.lat, pontoA.lon]).addTo(map).bindPopup(enderecoA);
-
-    // Para cada entrega, calcular a rota mínima A -> destino
-    for (let i = 1; i < enderecos.length; i++) {
-      const pontoDestino = await buscarCoordenadas(enderecos[i]);
-      L.marker([pontoDestino.lat, pontoDestino.lon]).addTo(map).bindPopup(enderecos[i]);
-
-      const rotaInfo = await desenharRota([pontoA, pontoDestino]);
-      const distanciaKm = rotaInfo.distancia / 1000;
-
-      distanciaTotalKm += distanciaKm;
-
-      // Cálculo do valor para este ponto
-      let valor = 8;
-      if (distanciaKm > 3) {
-        valor += (distanciaKm - 3) * 1.8;
-      }
-      if (temRetorno) {
-        valor += distanciaKm * 0.8;
-      }
-
-      valorTotal += valor;
+  for (const ordem of ordens) {
+    const rota = [origem, ...ordem];
+    const { distancia } = await desenharRota(rota);
+    if (distancia < menorDistancia) {
+      menorDistancia = distancia;
+      melhorOrdem = ordem;
     }
-
-    msgDiv.innerHTML = `
-      Total de pontos: ${enderecos.length - 1}<br>
-      Distância total (soma das menores rotas): ${distanciaTotalKm.toFixed(2)} km<br>
-      <strong>Valor da entrega: R$ ${valorTotal.toFixed(2)}</strong>
-    `;
-
-  } catch (err) {
-    msgDiv.textContent = err.message;
-    msgDiv.style.color = 'red';
   }
+
+  // Mostrar rota final otimizada
+  await desenharRota([origem, ...melhorOrdem]);
+  console.log(`Menor distância: ${(menorDistancia / 1000).toFixed(2)} km`);
 }
+
+function permutacoes(arr) {
+  if (arr.length <= 1) return [arr];
+  const result = [];
+  arr.forEach((item, i) => {
+    const resto = [...arr.slice(0, i), ...arr.slice(i + 1)];
+    for (const perm of permutacoes(resto)) {
+      result.push([item, ...perm]);
+    }
+  });
+  return result;
+}
+
 
 
 
