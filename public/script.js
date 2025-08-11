@@ -183,7 +183,7 @@ async function calcularRotaOtimizada() {
     }
     // Paradas extras além da primeira entrega
     const pontosExtras = enderecos.length - 2;
-    if (pontosExtras > 0) valorEntrega += pontosExtras * 6;
+    if (pontosExtras > 0) valorEntrega += pontosExtras * 0;
 
     msgDiv.innerHTML = `
       Total de pontos: ${enderecos.length}<br>
