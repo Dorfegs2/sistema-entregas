@@ -28,15 +28,16 @@ async function calcularRotaGoogle(pontos) {
 // Função para desenhar rota no Leaflet usando a polyline codificada do Google
 function desenharRotaGoogle(data) {
   const route = data.routes[0];
-  const polyline = route.overview_polyline.points;
+  const polylineStr = route.overview_polyline.points;
 
-  // Usar a biblioteca polyline do Leaflet para decodificar
-  const coords = L.Polyline.fromEncoded(polyline).getLatLngs();
+  // Decodifica a polyline para array de [lat, lon]
+  const coords = polyline.decode(polylineStr).map(p => [p[0], p[1]]);
 
   if (rotaLayer) map.removeLayer(rotaLayer);
   rotaLayer = L.polyline(coords, { color: 'blue', weight: 5 }).addTo(map);
   map.fitBounds(rotaLayer.getBounds());
 }
+
 
 // Função principal adaptada para usar Google Directions
 async function calcularRota() {
