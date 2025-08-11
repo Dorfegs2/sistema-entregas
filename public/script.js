@@ -1,92 +1,84 @@
-// Inicializa mapa Leaflet
 const map = L.map('map').setView([-27.64966, -48.67656], 13);
 
-const baseLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '&copy; OpenStreetMap contributors'
 }).addTo(map);
 
-let rotaLayer = null;
-let markers = [];
+let markerA, rotaLayer;
+let rotaInfoGlobal = null;
 
-// Função para limpar marcadores e rota antiga do mapa
 function limparMapa() {
-  if (rotaLayer) {
-    map.removeLayer(rotaLayer);
-    rotaLayer = null;
-  }
-  markers.forEach(m => map.removeLayer(m));
-  markers = [];
+  if (markerA) map.removeLayer(markerA);
+  if (rotaLayer) map.removeLayer(rotaLayer);
+  map.eachLayer(layer => {
+    if (layer instanceof L.Marker && layer !== markerA) {
+      map.removeLayer(layer);
+    }
+  });
 }
 
-// Função para buscar coordenadas usando Geocoding API do Google
 async function buscarCoordenadas(endereco) {
-  const apiKey = 'AIzaSyCjQUdB2AwYU5tV6LjFMJ0P8415O1_CJv8'; // substitua pela sua API Key
-  const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(endereco)}&key=${apiKey}`;
-
+  const url = https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(endereco + ', Brasil')};
   const res = await fetch(url);
-  if (!res.ok) throw new Error('Erro na Geocoding API: ' + await res.text());
-
   const data = await res.json();
-  if (data.status !== 'OK') throw new Error('Geocoding API retornou erro: ' + data.status);
-
-  const location = data.results[0].geometry.location;
-  return { lat: location.lat, lon: location.lng };
+  if (data.length === 0) throw new Error(Endereço não encontrado: ${endereco});
+  return {
+    lat: parseFloat(data[0].lat),
+    lon: parseFloat(data[0].lon),
+    nomeFormatado: data[0].display_name
+  };
 }
 
-// Função para chamar Google Directions API
-async function calcularRotaGoogle(pontos) {
-  if (pontos.length < 2) throw new Error('Necessário pelo menos origem e destino');
+async function desenharRotaMultiplos(pontos) {
+  const apiKey = '5b3ce3597851110001cf6248fb2a1b09d2044e9c85c8e5d8750c7c76';
+  const url = 'https://api.openrouteservice.org/v2/directions/driving-car/geojson';
 
-  const apiKey = 'AIzaSyCjQUdB2AwYU5tV6LjFMJ0P8415O1_CJv8';
+  const coords = pontos.map(p => [p.lon, p.lat]);
 
-  const origin = `${pontos[0].lat},${pontos[0].lon}`;
-  const destination = `${pontos[pontos.length - 1].lat},${pontos[pontos.length - 1].lon}`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Authorization': apiKey,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ coordinates: coords })
+  });
 
-  const waypoints = pontos.length > 2 ? pontos.slice(1, -1).map(p => `${p.lat},${p.lon}`).join('|') : '';
-
-  let url = `https://maps.googleapis.com/maps/api/directions/json?origin=${origin}&destination=${destination}&key=${apiKey}`;
-  if (waypoints) {
-    url += `&waypoints=optimize:true|${waypoints}`;
-  }
-
-  const res = await fetch(url);
-  if (!res.ok) throw new Error('Erro Google Directions API: ' + await res.text());
+  if (!res.ok) throw new Error('Erro OpenRouteService: ' + await res.text());
 
   const data = await res.json();
-  if (data.status !== 'OK') throw new Error('Google Directions API retornou erro: ' + data.status);
-
-  return data;
-}
-
-// Função para desenhar rota no Leaflet usando polyline codificada do Google
-function desenharRotaGoogle(data) {
-  const route = data.routes[0];
-  const polylineStr = route.overview_polyline.points;
-
-  // Decodifica polyline para array de [lat, lon]
-  const coords = polyline.decode(polylineStr).map(p => [p[0], p[1]]);
 
   if (rotaLayer) map.removeLayer(rotaLayer);
-  rotaLayer = L.polyline(coords, { color: 'blue', weight: 5 }).addTo(map);
+  rotaLayer = L.geoJSON(data, {
+    style: { color: 'blue', weight: 5 }
+  }).addTo(map);
+
   map.fitBounds(rotaLayer.getBounds());
+
+  return {
+    distancia: data.features[0].properties.summary.distance,
+    duracao: data.features[0].properties.summary.duration
+  };
 }
 
-// Função para calcular valor da entrega
-function calcularValorEntrega(distanciaKm, temRetorno, pontosExtras) {
-  let valor = 8.0;
-  if (distanciaKm > 3) {
-    valor += (distanciaKm - 3) * 1.8;
+function reinserirNumeroEndereco(original, formatado) {
+  const match = original.match(/(\d{1,5})/);
+  if (!match) return formatado;
+  const numero = match[1];
+
+  const partes = formatado.split(',');
+  if (partes.length > 1 && !partes[0].includes(numero)) {
+    partes[0] = partes[0] + ', ' + numero;
+    return partes.join(', ');
   }
-  if (temRetorno) {
-    valor += distanciaKm * 0.8;
-  }
-  if (pontosExtras > 0) {
-    valor += pontosExtras * 6;
-  }
-  return valor;
+  return formatado.includes(numero) ? formatado : formatado + ', ' + numero;
 }
 
-// Função principal para calcular a rota ao clicar no botão
+function resumirEndereco(enderecoCompleto) {
+  const partes = enderecoCompleto.split(',');
+  return partes.slice(0, 4).map(p => p.trim()).join(', ');
+}
+
 async function calcularRota() {
   const msgDiv = document.getElementById('mensagem');
   msgDiv.textContent = 'Calculando rota...';
@@ -95,53 +87,51 @@ async function calcularRota() {
 
   const enderecoA = document.getElementById('enderecoA').value.trim();
   const enderecoB = document.getElementById('enderecoB').value.trim();
-  const extras = Array.from(document.querySelectorAll('.endereco-extra')).map(i => i.value.trim()).filter(e => e !== '');
-  const temRetorno = document.getElementById('temRetorno').checked;
+  const extras = Array.from(document.querySelectorAll('.endereco-extra')).map(input => input.value.trim());
 
-  if (!enderecoA || !enderecoB) {
-    msgDiv.textContent = 'Preencha pelo menos origem e destino.';
-    msgDiv.style.color = 'red';
-    return;
-  }
+  const enderecos = [enderecoA, enderecoB, ...extras];
+  const pontos = [];
 
   try {
-    const enderecos = [enderecoA, enderecoB, ...extras];
-    const pontos = [];
-
-    // Buscar coordenadas e colocar marcadores no mapa
-    for (const e of enderecos) {
-      const p = await buscarCoordenadas(e);
-      pontos.push(p);
-      const marker = L.marker([p.lat, p.lon]).addTo(map).bindPopup(e);
-      markers.push(marker);
+    for (const endereco of enderecos) {
+      const ponto = await buscarCoordenadas(endereco);
+      pontos.push(ponto);
+      L.marker([ponto.lat, ponto.lon]).addTo(map).bindPopup(endereco).openPopup();
     }
 
-    const dadosRota = await calcularRotaGoogle(pontos);
-    desenharRotaGoogle(dadosRota);
+    const rotaInfo = await desenharRotaMultiplos(pontos);
 
-    // Somar distância e duração
-    const resumo = dadosRota.routes[0].legs.reduce((acc, leg) => {
-      acc.distancia += leg.distance.value;
-      acc.duracao += leg.duration.value;
-      return acc;
-    }, { distancia: 0, duracao: 0 });
+const distanciaKm = rotaInfo.distancia / 1000;
+const duracaoMin = rotaInfo.duracao / 60;
 
-    const distanciaKm = resumo.distancia / 1000;
-    const duracaoMin = resumo.duracao / 60;
-    const pontosExtras = enderecos.length - 2;
+    const temRetorno = document.getElementById('temRetorno').checked;
 
-    const valorEntrega = calcularValorEntrega(distanciaKm, temRetorno, pontosExtras);
+let valorEntrega = 8.0;
+if (distanciaKm > 3) {
+  valorEntrega += (distanciaKm - 3) * 1.8;
+}
+if (temRetorno) {
+  valorEntrega += distanciaKm * 0.8;
+}
 
-    msgDiv.innerHTML = `
+
+    msgDiv.innerHTML = 
       Total de pontos: ${enderecos.length}<br>
-      Distância total: ${distanciaKm.toFixed(2)} km<br>
+      Distância: ${distanciaKm.toFixed(2)} km<br>
       Duração: ${duracaoMin.toFixed(0)} minutos<br>
       <strong>Valor da entrega: R$ ${valorEntrega.toFixed(2)}</strong>
-    `;
+    ;
 
-    // Habilitar botão WhatsApp (você pode ajustar o que fazer aqui)
+    rotaInfoGlobal = {
+      pontos,
+      distancia: rotaInfo.distancia,
+      duracao: rotaInfo.duracao,
+      valorEntrega,
+      temRetorno: document.getElementById('temRetorno').checked,
+      enderecosDigitados: enderecos
+    };
+
     document.getElementById('btnWhatsapp').disabled = false;
-
   } catch (err) {
     msgDiv.textContent = err.message;
     msgDiv.style.color = 'red';
@@ -149,20 +139,52 @@ async function calcularRota() {
   }
 }
 
-// Evento botão adicionar parada extra
+function abrirWhatsApp() {
+  if (!rotaInfoGlobal) {
+    alert('Calcule a rota antes de enviar.');
+    return;
+  }
+
+  const nomeCliente = document.getElementById('nomedocliente').value.trim();
+  const solicitante = localStorage.getItem('usuario_nome') || 'Solicitante';
+  const numPedido = document.getElementById('numPedido').value.trim();
+
+  const enderecosResumo = rotaInfoGlobal.enderecosDigitados.map((end, i) => {
+    const formatado = reinserirNumeroEndereco(end, rotaInfoGlobal.pontos[i].nomeFormatado);
+    return ${String.fromCharCode(65 + i)}: ${resumirEndereco(formatado)};
+  }).join('\n');
+
+  const retornoTexto = rotaInfoGlobal.temRetorno ? 'Sim' : 'Não';
+
+  const msg = *Pedido de Entrega*\n
+Nome do Cliente: ${nomeCliente}
+Pedido Nº: ${numPedido}
+${enderecosResumo}
+Distância total: ${(rotaInfoGlobal.distancia / 1000).toFixed(2)} km
+Tempo estimado: ${Math.round(rotaInfoGlobal.duracao / 60)} minutos
+Retorno: ${retornoTexto}
+Valor da entrega: R$ ${rotaInfoGlobal.valorEntrega.toFixed(2)}
+Solicitante: ${solicitante};
+
+  const numeroWhatsApp = '48988131927';
+  const url = https://wa.me/${numeroWhatsApp}?text=${encodeURIComponent(msg)};
+  window.open(url, '_blank');
+}
+
+document.getElementById('btnCalcular').addEventListener('click', calcularRota);
+document.getElementById('btnWhatsapp').addEventListener('click', abrirWhatsApp);
+
+let contadorExtras = 0;
+
 document.getElementById('btnAddEntrega').addEventListener('click', () => {
+  contadorExtras++;
   const container = document.getElementById('enderecosExtras');
-  const totalExtras = container.querySelectorAll('.endereco-extra').length;
-  const letra = String.fromCharCode(67 + totalExtras); // 67 = 'C'
 
   const grupo = document.createElement('div');
   grupo.className = 'input-group mt-2';
-  grupo.innerHTML = `
+  grupo.innerHTML = 
     <span class="input-group-text"><i class="bi bi-geo-alt-fill"></i></span>
-    <input type="text" class="form-control endereco-extra" placeholder="Endereço Entrega Extra (Ponto ${letra})" required />
-  `;
+    <input type="text" class="form-control endereco-extra" placeholder="Endereço Entrega Extra (Ponto ${String.fromCharCode(66 + contadorExtras)})" required />
+  ;
   container.appendChild(grupo);
 });
-
-// Evento botão calcular rota
-document.getElementById('btnCalcular').addEventListener('click', calcularRota);
