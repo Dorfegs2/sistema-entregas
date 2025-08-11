@@ -97,54 +97,45 @@ async function calcularRota() {
   }
 
   const enderecos = [enderecoA, enderecoB, ...extras.filter(e => e !== '')];
-  const pontos = [];
+  let valorTotal = 0;
+  let distanciaTotalKm = 0;
 
   try {
-    // Buscar coordenadas de todos os endereços
-    for (const endereco of enderecos) {
-      const ponto = await buscarCoordenadas(endereco);
-      pontos.push(ponto);
-      L.marker([ponto.lat, ponto.lon]).addTo(map).bindPopup(endereco).openPopup();
+    // Buscar coordenadas do ponto A
+    const pontoA = await buscarCoordenadas(enderecoA);
+    L.marker([pontoA.lat, pontoA.lon]).addTo(map).bindPopup(enderecoA);
+
+    // Para cada entrega, calcular a rota mínima A -> destino
+    for (let i = 1; i < enderecos.length; i++) {
+      const pontoDestino = await buscarCoordenadas(enderecos[i]);
+      L.marker([pontoDestino.lat, pontoDestino.lon]).addTo(map).bindPopup(enderecos[i]);
+
+      const rotaInfo = await desenharRota([pontoA, pontoDestino]);
+      const distanciaKm = rotaInfo.distancia / 1000;
+
+      distanciaTotalKm += distanciaKm;
+
+      // Cálculo do valor para este ponto
+      let valor = 8;
+      if (distanciaKm > 3) {
+        valor += (distanciaKm - 3) * 1.8;
+      }
+      if (temRetorno) {
+        valor += distanciaKm * 0.8;
+      }
+
+      valorTotal += valor;
     }
 
-    // Calcular rota única com todos os pontos em sequência
-    const rotaInfo = await desenharRotaMultiplos(pontos);
-
-    const distanciaKm = rotaInfo.distancia / 1000;
-    const duracaoMin = rotaInfo.duracao / 60;
-
-    // 🔢 Cálculo do valor
-    let valorEntrega = 8.0;
-
-    if (distanciaKm > 3) {
-      valorEntrega += (distanciaKm - 3) * 1.8;
-    }
-    if (temRetorno) {
-      valorEntrega += distanciaKm * 0.8;
-    }
-
-    // 🖼️ Exibir resumo
     msgDiv.innerHTML = `
-      Total de pontos: ${enderecos.length}<br>
-      Distância total: ${distanciaKm.toFixed(2)} km<br>
-      Duração: ${duracaoMin.toFixed(0)} minutos<br>
-      <strong>Valor da entrega: R$ ${valorEntrega.toFixed(2)}</strong>
+      Total de pontos: ${enderecos.length - 1}<br>
+      Distância total (soma das menores rotas): ${distanciaTotalKm.toFixed(2)} km<br>
+      <strong>Valor da entrega: R$ ${valorTotal.toFixed(2)}</strong>
     `;
 
-    rotaInfoGlobal = {
-      pontos,
-      distancia: rotaInfo.distancia,
-      duracao: rotaInfo.duracao,
-      valorEntrega,
-      temRetorno,
-      enderecosDigitados: enderecos
-    };
-
-    document.getElementById('btnWhatsapp').disabled = false;
   } catch (err) {
     msgDiv.textContent = err.message;
     msgDiv.style.color = 'red';
-    document.getElementById('btnWhatsapp').disabled = true;
   }
 }
 
