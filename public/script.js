@@ -81,7 +81,7 @@ function resumirEndereco(enderecoCompleto) {
 
 async function calcularRota() {
   const msgDiv = document.getElementById('mensagem');
-  msgDiv.textContent = 'Calculando rotas...';
+  msgDiv.textContent = 'Calculando rota...';
   msgDiv.style.color = 'black';
   limparMapa();
 
@@ -96,70 +96,55 @@ async function calcularRota() {
     return;
   }
 
-  const enderecos = [enderecoB, ...extras.filter(e => e !== '')];
+  const enderecos = [enderecoA, enderecoB, ...extras.filter(e => e !== '')];
   const pontos = [];
-  let pontoA;
 
   try {
-    // Buscar coordenadas do ponto A
-    pontoA = await buscarCoordenadas(enderecoA);
-    markerA = L.marker([pontoA.lat, pontoA.lon]).addTo(map).bindPopup('Origem (A)').openPopup();
-
-    let distanciaTotal = 0;
-    let duracaoTotal = 0;
-    let valorEntrega = 0;
-
-    for (let i = 0; i < enderecos.length; i++) {
-      const destino = await buscarCoordenadas(enderecos[i]);
-      pontos.push(destino);
-
-      L.marker([destino.lat, destino.lon])
-        .addTo(map)
-        .bindPopup(`Entrega ${String.fromCharCode(66 + i)}: ${enderecos[i]}`);
-
-      // Calcular rota A → destinoX
-      const rota = await desenharRotaMultiplos([pontoA, destino]);
-
-      const distanciaKm = rota.distancia / 1000;
-      const duracaoMin = rota.duracao / 60;
-
-      distanciaTotal += rota.distancia;
-      duracaoTotal += rota.duracao;
-
-      // Cálculo do valor para este destino
-      let valor = 8.0;
-      if (distanciaKm > 3) {
-        valor += (distanciaKm - 3) * 1.8;
-      }
-      if (temRetorno) {
-        valor += distanciaKm * 0.8;
-      }
-      if (i > 0) {
-        valor += 6; // parada extra
-      }
-
-      valorEntrega += valor;
+    // Buscar coordenadas de todos os endereços
+    for (const endereco of enderecos) {
+      const ponto = await buscarCoordenadas(endereco);
+      pontos.push(ponto);
+      L.marker([ponto.lat, ponto.lon]).addTo(map).bindPopup(endereco).openPopup();
     }
 
-    // Exibir resumo
+    // Calcular rota única com todos os pontos em sequência
+    const rotaInfo = await desenharRotaMultiplos(pontos);
+
+    const distanciaKm = rotaInfo.distancia / 1000;
+    const duracaoMin = rotaInfo.duracao / 60;
+
+    // 🔢 Cálculo do valor
+    let valorEntrega = 8.0;
+
+    if (distanciaKm > 3) {
+      valorEntrega += (distanciaKm - 3) * 1.8;
+    }
+    if (temRetorno) {
+      valorEntrega += distanciaKm * 0.8;
+    }
+
+    // Paradas extras (desconsidera origem e primeira entrega)
+    const pontosExtras = enderecos.length - 2;
+    valorEntrega += pontosExtras * 6;
+
+    // 🖼️ Exibir resumo
     msgDiv.innerHTML = `
-      Total de destinos: ${enderecos.length}<br>
-      Distância total (somada): ${(distanciaTotal / 1000).toFixed(2)} km<br>
-      Tempo total (somado): ${(duracaoTotal / 60).toFixed(0)} minutos<br>
-      <strong>Valor total da entrega: R$ ${valorEntrega.toFixed(2)}</strong>
+      Total de pontos: ${enderecos.length}<br>
+      Distância total: ${distanciaKm.toFixed(2)} km<br>
+      Duração: ${duracaoMin.toFixed(0)} minutos<br>
+      <strong>Valor da entrega: R$ ${valorEntrega.toFixed(2)}</strong>
     `;
 
     rotaInfoGlobal = {
-      pontos: [pontoA, ...pontos],
-      distancia: distanciaTotal,
-      duracao: duracaoTotal,
+      pontos,
+      distancia: rotaInfo.distancia,
+      duracao: rotaInfo.duracao,
       valorEntrega,
       temRetorno,
-      enderecosDigitados: [enderecoA, ...enderecos]
+      enderecosDigitados: enderecos
     };
 
     document.getElementById('btnWhatsapp').disabled = false;
-
   } catch (err) {
     msgDiv.textContent = err.message;
     msgDiv.style.color = 'red';
