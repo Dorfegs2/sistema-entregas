@@ -81,7 +81,7 @@ function resumirEndereco(enderecoCompleto) {
 
 async function calcularRota() {
   const msgDiv = document.getElementById('mensagem');
-  msgDiv.textContent = 'Calculando rota...';
+  msgDiv.textContent = 'Calculando rotas...';
   msgDiv.style.color = 'black';
   limparMapa();
 
@@ -90,16 +90,21 @@ async function calcularRota() {
   const extras = Array.from(document.querySelectorAll('.endereco-extra')).map(input => input.value.trim());
   const temRetorno = document.getElementById('temRetorno').checked;
 
-  const enderecos = [enderecoB, ...extras]; // Destinos (sem incluir A)
+  if (!enderecoA || !enderecoB) {
+    msgDiv.textContent = 'Preencha pelo menos origem e destino.';
+    msgDiv.style.color = 'red';
+    return;
+  }
+
+  const enderecos = [enderecoB, ...extras.filter(e => e !== '')];
   const pontos = [];
   let pontoA;
 
   try {
-    // Busca coordenadas do ponto A
+    // Buscar coordenadas do ponto A
     pontoA = await buscarCoordenadas(enderecoA);
     markerA = L.marker([pontoA.lat, pontoA.lon]).addTo(map).bindPopup('Origem (A)').openPopup();
 
-    // Adiciona ponto A ao mapa
     let distanciaTotal = 0;
     let duracaoTotal = 0;
     let valorEntrega = 0;
@@ -108,9 +113,11 @@ async function calcularRota() {
       const destino = await buscarCoordenadas(enderecos[i]);
       pontos.push(destino);
 
-      L.marker([destino.lat, destino.lon]).addTo(map).bindPopup(`Entrega ${String.fromCharCode(66 + i)}: ${enderecos[i]}`);
+      L.marker([destino.lat, destino.lon])
+        .addTo(map)
+        .bindPopup(`Entrega ${String.fromCharCode(66 + i)}: ${enderecos[i]}`);
 
-      // Rota do A → destino
+      // Calcular rota A → destinoX
       const rota = await desenharRotaMultiplos([pontoA, destino]);
 
       const distanciaKm = rota.distancia / 1000;
@@ -119,32 +126,26 @@ async function calcularRota() {
       distanciaTotal += rota.distancia;
       duracaoTotal += rota.duracao;
 
-      // Calcular valor individual da entrega
+      // Cálculo do valor para este destino
       let valor = 8.0;
       if (distanciaKm > 3) {
         valor += (distanciaKm - 3) * 1.8;
       }
-
       if (temRetorno) {
         valor += distanciaKm * 0.8;
       }
-
-      // R$6 por parada extra (exceto primeira entrega)
       if (i > 0) {
-        valor += 6;
+        valor += 6; // parada extra
       }
 
       valorEntrega += valor;
     }
 
-    // Exibe resultados
-    const totalKm = distanciaTotal / 1000;
-    const totalMin = duracaoTotal / 60;
-
+    // Exibir resumo
     msgDiv.innerHTML = `
-      Total de entregas: ${enderecos.length}<br>
-      Distância total: ${totalKm.toFixed(2)} km<br>
-      Tempo estimado: ${totalMin.toFixed(0)} minutos<br>
+      Total de destinos: ${enderecos.length}<br>
+      Distância total (somada): ${(distanciaTotal / 1000).toFixed(2)} km<br>
+      Tempo total (somado): ${(duracaoTotal / 60).toFixed(0)} minutos<br>
       <strong>Valor total da entrega: R$ ${valorEntrega.toFixed(2)}</strong>
     `;
 
@@ -165,6 +166,7 @@ async function calcularRota() {
     document.getElementById('btnWhatsapp').disabled = true;
   }
 }
+
 
 
 
