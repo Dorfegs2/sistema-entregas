@@ -112,9 +112,9 @@ async function calcularRota() {
 
     const temRetorno = document.getElementById('temRetorno').checked;
 
-    let valorEntrega = 8.0;
+    let valorEntrega = 7.0;
     if (distanciaKm > 3) {
-      valorEntrega += (distanciaKm - 3) * 1.8;
+      valorEntrega += (distanciaKm - 3) * 1.5;
     }
     if (temRetorno) {
       valorEntrega += distanciaKm * 0.8;
