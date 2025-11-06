@@ -114,7 +114,7 @@ async function calcularRota() {
 
     let valorEntrega = 8.0;
     if (distanciaKm > 3) {
-      valorEntrega += (distanciaKm - 3) * 1.5;
+      valorEntrega += (distanciaKm - 3) * 1.8;
     }
     if (temRetorno) {
       valorEntrega += distanciaKm * 0.8;
